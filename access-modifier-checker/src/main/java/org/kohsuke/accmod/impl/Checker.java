@@ -23,6 +23,7 @@
  */
 package org.kohsuke.accmod.impl;
 
+import org.apache.maven.plugin.logging.Log;
 import org.kohsuke.accmod.AccessRestriction;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.impl.Restrictions.Parser;
@@ -85,12 +86,16 @@ public class Checker {
 
     private final AccessRestrictionFactory factory;
 
+    private final Log log;
 
-    Checker(ClassLoader dependencies, ErrorListener errorListener, Properties properties) throws IOException {
+
+    public Checker(ClassLoader dependencies, ErrorListener errorListener, Properties properties,
+            Log log) throws IOException {
         this.dependencies = dependencies;
         this.errorListener = errorListener;
         this.properties = properties;
         this.factory = new AccessRestrictionFactory(dependencies);
+        this.log = log;
 
         // load access restrictions
         loadAccessRestrictions();
@@ -105,7 +110,11 @@ public class Checker {
      */
     public void check(File f) throws IOException {
         if (f.isDirectory()) {
-            for (File c : f.listFiles())
+            File[] files = f.listFiles();
+            if (files == null) {
+                throw new IllegalArgumentException("Directory " + f.getName() + " is empty when it should not be");
+            }
+            for (File c : files)
                 check(c);
             return;
         }
